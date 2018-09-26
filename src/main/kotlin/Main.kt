@@ -48,9 +48,16 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
         val eventsFromDatafeed: MutableList<SymEvent>? = symphony.dataFeedClient.getEventsFromDatafeed(datafeed)
         eventsFromDatafeed?.forEach {
             if (it.type == "MESSAGESENT" && it.initiator != symphony.localUser) {
-                println(it.payload)
+                val messageText = it.payload.messageSent.messageText.trim()
+                println("### $messageText")
+
+                if (messageText == "bot build") {
+                    val jenkinsService = JenkinsService()
+                    jenkinsService.build()
+                }
+
                 val msg = SymMessage()
-                msg.messageText = "You said -> ${it.payload.messageSent.messageText}"
+                msg.messageText = "You said -> $messageText"
                 symphony.messageService.sendMessage(it.payload.messageSent.stream, msg)
             }
         }
