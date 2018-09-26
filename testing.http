@@ -1,0 +1,21 @@
+POST http://localhost:6677/jenkins
+Content-Type: application/json
+
+{
+  "foo": "bar"
+}
+
+###
+
+GET http://ec2-18-130-79-165.eu-west-2.compute.amazonaws.com:6677
+
+###
+
+POST http://ec2-18-130-79-165.eu-west-2.compute.amazonaws.com:6677/jenkins
+Content-Type: application/json
+
+{
+  "name": "jason"
+}
+
+###
