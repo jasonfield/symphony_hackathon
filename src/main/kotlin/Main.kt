@@ -3,6 +3,7 @@ import io.ktor.http.ContentType
 import io.ktor.request.receiveText
 import io.ktor.response.respondText
 import io.ktor.routing.get
+import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -61,15 +62,16 @@ private fun startWebServer(symphony: SymphonyClient) {
             get("/") {
                 call.respondText("Hello World!", ContentType.Text.Plain)
             }
-            get("/jenkins") {
+            post("/jenkins") {
                 println("Got a message from jenkins!")
-                println(call.receiveText())
-                call.respondText("HELLO WORLD!")
+                val rx = call.receiveText()
+                println(rx)
+                call.respondText("OK")
 
                 val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com"))
 
                 val aMessage = SymMessage()
-                aMessage.messageText = "Bot online. Global takeover imminent."
+                aMessage.messageText = rx
 
                 symphony.messageService.sendMessage(stream, aMessage)
             }
