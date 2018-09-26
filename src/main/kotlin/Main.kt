@@ -72,6 +72,11 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     val jenkinsService = JenkinsService()
                     jenkinsService.build()
                 }
+
+                if (messageText == "bot deploy") {
+                    val jenkinsService = JenkinsService()
+                    jenkinsService.deploy()
+                }
             }
         }
         print(".")

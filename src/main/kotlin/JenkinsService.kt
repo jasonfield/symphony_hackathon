@@ -9,7 +9,11 @@ class JenkinsService {
     private val jenkinsUrl = "http://ec2-18-130-79-165.eu-west-2.compute.amazonaws.com"
 
     fun build(): Boolean {
-        val (_, _, result) = "$jenkinsUrl/job/Build%20my%20awesome%20project/build?delay=0sec"
+        return runJob("Build%20my%20awesome%20project")
+    }
+
+    private fun runJob(jobName: String): Boolean {
+        val (_, _, result) = "$jenkinsUrl/job/$jobName/build?delay=0sec"
                 .httpPost()
                 .authenticate("jason", "foobar")
                 .header("Jenkins-Crumb" to getCrumb())
@@ -42,6 +46,10 @@ class JenkinsService {
                 message.crumb
             }
         }
+    }
+
+    fun deploy(): Boolean {
+        return runJob("Deploy%20to%20Production")
     }
 }
 
