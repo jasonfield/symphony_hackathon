@@ -1,3 +1,5 @@
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.application.call
 import io.ktor.http.ContentType
 import io.ktor.request.receiveText
@@ -63,15 +65,17 @@ private fun startWebServer(symphony: SymphonyClient) {
                 call.respondText("Hello World!", ContentType.Text.Plain)
             }
             post("/jenkins") {
-                println("Got a message from jenkins!")
                 val rx = call.receiveText()
-                println(rx)
+                println("Got a message from jenkins! [$rx]")
                 call.respondText("OK")
+
+                val mapper = jacksonObjectMapper()
+                val message = mapper.readValue<JenkinsStatusMessage>(rx)
 
                 val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com"))
 
                 val aMessage = SymMessage()
-                aMessage.messageText = rx
+                aMessage.messageText = "Jenkins job ${message.display_name} ${message.build.phase}"
 
                 symphony.messageService.sendMessage(stream, aMessage)
             }
