@@ -56,7 +56,7 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
 }
 
 private fun startWebServer(symphony: SymphonyClient) {
-    val server = embeddedServer(Netty, port = 8080) {
+    val server = embeddedServer(Netty, port = 6677) {
         routing {
             get("/") {
                 call.respondText("Hello World!", ContentType.Text.Plain)
