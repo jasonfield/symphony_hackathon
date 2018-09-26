@@ -7,6 +7,7 @@ import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import org.apache.log4j.BasicConfigurator
+import org.symphonyoss.client.SymphonyClient
 import org.symphonyoss.client.SymphonyClientConfig
 import org.symphonyoss.client.SymphonyClientFactory
 import org.symphonyoss.client.events.SymEvent
@@ -17,24 +18,28 @@ import org.symphonyoss.symphony.clients.model.SymMessage
 fun main(args: Array<String>) {
     BasicConfigurator.configure()
 
-    startWebServer()
-    startSymphonyBot()
+    val symphony = connectToSymphony()
+    startWebServer(symphony)
+
+    watchForSymphonyMessages(symphony)
 }
 
-private fun startSymphonyBot() {
+private fun connectToSymphony(): SymphonyClient {
     val symphonyClientConfig = SymphonyClientConfig(true)
 
     val symphony = SymphonyClientFactory.getClient(SymphonyClientFactory.TYPE.V4, symphonyClientConfig)
 
-    val userFromEmail = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")
-    println(userFromEmail)
-    val stream = symphony.streamsClient.getStream(userFromEmail)
+    val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com"))
 
     val aMessage = SymMessage()
     aMessage.messageText = "Bot online. Global takeover imminent."
 
     symphony.messageService.sendMessage(stream, aMessage)
 
+    return symphony
+}
+
+private fun watchForSymphonyMessages(symphony: SymphonyClient) {
     val datafeed = symphony.dataFeedClient.createDatafeed(ApiVersion.V4)
     while (true) {
         val eventsFromDatafeed: MutableList<SymEvent>? = symphony.dataFeedClient.getEventsFromDatafeed(datafeed)
@@ -50,7 +55,7 @@ private fun startSymphonyBot() {
     }
 }
 
-private fun startWebServer() {
+private fun startWebServer(symphony: SymphonyClient) {
     val server = embeddedServer(Netty, port = 8080) {
         routing {
             get("/") {
@@ -60,6 +65,13 @@ private fun startWebServer() {
                 println("Got a message from jenkins!")
                 println(call.receiveText())
                 call.respondText("HELLO WORLD!")
+
+                val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com"))
+
+                val aMessage = SymMessage()
+                aMessage.messageText = "Bot online. Global takeover imminent."
+
+                symphony.messageService.sendMessage(stream, aMessage)
             }
         }
     }
