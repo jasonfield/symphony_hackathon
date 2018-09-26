@@ -72,10 +72,6 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     val jenkinsService = JenkinsService()
                     jenkinsService.build()
                 }
-
-                val msg = SymMessage()
-                msg.messageText = "You said -> $messageText"
-                symphony.messageService.sendMessage(it.payload.messageSent.stream, msg)
             }
         }
         print(".")
