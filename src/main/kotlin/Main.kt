@@ -14,6 +14,7 @@ import org.symphonyoss.client.SymphonyClient
 import org.symphonyoss.client.SymphonyClientConfig
 import org.symphonyoss.client.SymphonyClientFactory
 import org.symphonyoss.client.events.SymEvent
+import org.symphonyoss.client.model.Room
 import org.symphonyoss.symphony.clients.model.*
 import java.util.*
 
@@ -37,19 +38,19 @@ var requestMessage: String = ""
 var requestPromotionReceived: Boolean = false
 var chatRoomName: String = ""
 
-private fun getProductionUsers() : Array<String> {
+private fun getProductionUsers(): Array<String> {
     return arrayOf("wells.powell@bnpparibas.com", "jackie.wong@uk.bnpparibas.com")
 }
 
-private fun getDevelopmentUsers() : Array<String> {
+private fun getDevelopmentUsers(): Array<String> {
     return arrayOf("jason.field@uk.bnpparibas.com", "stephen.wotton@uk.bnpparibas.com")
 }
 
-private fun getDevelopersChatRoom() : String {
+private fun getDevelopersChatRoom(): String {
     return "Dev Chat"
 }
 
-private fun getProductionChatRoom() : String {
+private fun getProductionChatRoom(): String {
     return "Prod Chat"
 }
 
@@ -65,8 +66,7 @@ private fun getRoomStream(symphony: SymphonyClient, chatRoomName: String = "Dev 
     return stream
 }
 
-private fun createChatRoom(symphony: SymphonyClient, chatRoomName: String, usersToAdd: ArrayList<String>){
-
+private fun createChatRoom(symphony: SymphonyClient, chatRoomName: String, usersToAdd: ArrayList<String>): Room {
     val att = SymRoomAttributes()
     att.discoverable = true
     att.name = chatRoomName
@@ -77,11 +77,11 @@ private fun createChatRoom(symphony: SymphonyClient, chatRoomName: String, users
     val room = symphony.roomService.createRoom(att)
 
     for (email in usersToAdd) {
-        var userId : Long = getUserId(symphony, email)
+        var userId: Long = getUserId(symphony, email)
         symphony.roomMembershipClient.addMemberToRoom(room.streamId, userId)
     }
 
-
+    return room
 }
 
 fun getUserId(symphony: SymphonyClient, email: String): Long {
@@ -90,7 +90,7 @@ fun getUserId(symphony: SymphonyClient, email: String): Long {
 }
 
 
-private fun connectToSymphony(userEmail : String = "stephen.wotton@uk.bnpparibas.com",  messageText : String = "Bot online. Global takeover imminent." ): SymphonyClient {
+private fun connectToSymphony(userEmail: String = "stephen.wotton@uk.bnpparibas.com", messageText: String = "Bot online. Global takeover imminent."): SymphonyClient {
     val symphonyClientConfig = SymphonyClientConfig(true)
 
     val symphony = SymphonyClientFactory.getClient(SymphonyClientFactory.TYPE.V4, symphonyClientConfig)
@@ -127,13 +127,11 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     sendRequestToProdTeam(symphony, messageText, it)
                 }
 
-                if (messageText.startsWith("accept request", true))
-                {
-                    prodTeamAcceptsRequest(symphony, messageText, it)
+                if (messageText.startsWith("accept request", true)) {
+                    prodTeamAcceptsRequest(symphony, it)
                 }
 
-                if (messageText.startsWith("release approved", true))
-                {
+                if (messageText.startsWith("release approved", true)) {
                     val a = it.initiator.displayName
                     val m = "Deploying request, approved by $a"
                     changeRequestRoomMessage(symphony, m, it, true)
@@ -143,8 +141,7 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     sendMessage(symphony, x, getDevelopersChatRoom(), it)
                 }
 
-                if (messageText.startsWith("accept rejected", true))
-                {
+                if (messageText.startsWith("accept rejected", true)) {
                     val a = it.initiator.displayName
                     val m = "Request rejected by $a"
                     changeRequestRoomMessage(symphony, m, it)
@@ -165,41 +162,39 @@ fun changeRequestRoomMessage(symphony: SymphonyClient, messageText: String, it: 
     val userEmail = it.initiator.emailAddress
     val roomStream = getRoomStream(symphony, chatRoomName)
     val aMessage = SymMessage()
-    val userIsProductionUser = getProductionUsers().any { it.equals(userEmail)}
+    val userIsProductionUser = getProductionUsers().any { it.equals(userEmail) }
 
-   if (!userIsProductionUser) {
+    if (!userIsProductionUser) {
         aMessage.messageText = "$user you are not permitted to approve requests."
-    }
-    else {
-       aMessage.messageText = messageText
+    } else {
+        aMessage.messageText = messageText
         //do jenkins magic here and message
-       if (doJenkins) {
-           JenkinsService().deploy()
-       }
+        if (doJenkins) {
+            JenkinsService().deploy()
+        }
     }
 
     symphony.messageService.sendMessage(roomStream, aMessage)
 }
 
-fun prodTeamAcceptsRequest(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+fun prodTeamAcceptsRequest(symphony: SymphonyClient, it: SymEvent) {
     val user = it.initiator.displayName
     val userEmail = it.initiator.emailAddress
     val roomStream = getRoomStream(symphony, getProductionChatRoom())
     val aMessage = SymMessage()
-    val userIsProductionUser = getProductionUsers().any { it.equals(userEmail)}
+    val userIsProductionUser = getProductionUsers().any { it.equals(userEmail) }
 
     if (!requestPromotionReceived) {
 
         aMessage.messageText = "$user there are no requests to accept!"
-    }
-    else if (!userIsProductionUser) {
+    } else if (!userIsProductionUser) {
         aMessage.messageText = "$user you are not permitted to accept requests."
-    }
-    else {
-
+    } else {
         var usersToAdd = arrayListOf<String>(userEmail, requestersEmail)
-        chatRoomName = "Request_" +  UUID.randomUUID().toString().substring(0, 8)
-        createChatRoom(symphony,chatRoomName, usersToAdd)
+        chatRoomName = "Promote Request Discussion" + UUID.randomUUID().toString().substring(0, 8)
+        val newRoom = createChatRoom(symphony, chatRoomName, usersToAdd)
+        symphony.messageService.sendMessage(newRoom, message("This is a room to discuss release promotion <a href='https://somthing.com'>serviceNow</a>"))
+
         aMessage.messageText = "$user has accepted request $requestMessage a chatroom $chatRoomName has been created."
     }
 
@@ -225,7 +220,7 @@ fun sendRequestToProdTeam(symphony: SymphonyClient, messageText: String, it: Sym
     val content = "$user wishes to: $messageText <a href='https://something.com'>serviceNow</a>"
     symphony.messageService.sendMessage(roomStream, message(content))
 
-    requestDisplayName =it.initiator.displayName
+    requestDisplayName = it.initiator.displayName
     requestMessage = content
     requestersEmail = it.initiator.emailAddress
     requestPromotionReceived = true
