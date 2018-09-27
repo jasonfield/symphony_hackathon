@@ -113,25 +113,25 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                 val messageText = it.payload.messageSent.messageText.trim()
                 println("### $messageText")
 
-                if (messageText == "bot build") {
+                if (messageText.contains("bot build")) {
                     val jenkinsService = JenkinsService()
                     jenkinsService.build()
                 }
 
-                if (messageText == "bot deploy") {
+                if (messageText.contains("bot deploy")) {
                     val jenkinsService = JenkinsService()
                     jenkinsService.deploy()
                 }
 
-                if (messageText.startsWith("promote request", true)) {
+                if (messageText.contains("promote request", true)) {
                     sendRequestToProdTeam(symphony, messageText, it)
                 }
 
-                if (messageText.startsWith("accept request", true)) {
+                if (messageText.contains("accept request", true)) {
                     prodTeamAcceptsRequest(symphony, it)
                 }
 
-                if (messageText.startsWith("release approved", true)) {
+                if (messageText.contains("release approved", true)) {
                     val a = it.initiator.displayName
                     val m = "Deploying request, approved by $a"
                     changeRequestRoomMessage(symphony, m, it, true)
@@ -141,7 +141,7 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     sendMessage(symphony, x, getDevelopersChatRoom(), it)
                 }
 
-                if (messageText.startsWith("accept rejected", true)) {
+                if (messageText.contains("accept rejected", true)) {
                     val a = it.initiator.displayName
                     val m = "Request rejected by $a"
                     changeRequestRoomMessage(symphony, m, it)
