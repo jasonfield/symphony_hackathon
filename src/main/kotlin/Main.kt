@@ -128,9 +128,13 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
                 call.respondText("OK")
 
                 val mapper = jacksonObjectMapper()
-                val message = mapper.readValue<JenkinsStatusMessage>(rx)
+                val jenkinsMessage = mapper.readValue<JenkinsStatusMessage>(rx)
 
-                symphony.messageService.sendMessage(stream, message("Jenkins job ${message.display_name} ${message.build.phase}"))
+                symphony.messageService.sendMessage(stream, message("Jenkins job ${jenkinsMessage.display_name} ${jenkinsMessage.build.phase}"))
+
+                if (jenkinsMessage.build.phase == "COMPLETED" && jenkinsMessage.build.status == "FAILURE") {
+
+                }
 
 
                 val me = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")

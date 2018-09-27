@@ -51,7 +51,28 @@ class JenkinsService {
     fun deploy(): Boolean {
         return runJob("Deploy%20to%20Production")
     }
+
+    fun getBuildInfo(buildLink: String): String {
+// http://ec2-18-130-79-165.eu-west-2.compute.amazonaws.com/job/Build%20my%20awesome%20project/19/api/json
+        val (_, _, result) = "$jenkinsUrl$buildLink/api/json"
+                .httpGet()
+                .authenticate("jason", "foobar")
+                .responseString()
+        return when (result) {
+            is Result.Failure -> {
+                val (_, error) = result
+                throw RuntimeException("Getting Jenkins crumb failed - $error")
+            }
+            is Result.Success -> {
+                val mapper = jacksonObjectMapper()
+                val (data, _) = result
+                val message = mapper.readValue<JenkinsCrumbResponse>(data!!)
+                message.crumb
+            }
+        }
+    }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class JenkinsCrumbResponse(val crumb: String)
+

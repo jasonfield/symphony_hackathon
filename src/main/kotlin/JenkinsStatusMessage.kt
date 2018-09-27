@@ -10,6 +10,6 @@ data class JenkinsStatusMessage(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Build(
         val full_url: String,
-        val phase: String
-
+        val phase: String,
+        val status: String?
 )
