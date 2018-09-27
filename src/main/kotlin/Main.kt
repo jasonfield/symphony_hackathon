@@ -15,6 +15,7 @@ import org.symphonyoss.client.SymphonyClientConfig
 import org.symphonyoss.client.SymphonyClientFactory
 import org.symphonyoss.client.events.SymEvent
 import org.symphonyoss.symphony.clients.model.*
+import java.util.*
 
 
 fun main(args: Array<String>) {
@@ -24,13 +25,19 @@ fun main(args: Array<String>) {
 
     val stream = getRoomStream(symphony)
     val aMessage = SymMessage()
-    aMessage.messageText = "oh hai room"
+    aMessage.messageText = "Bonjour"
     symphony.messageService.sendMessage(stream, aMessage)
 
     startWebServer(symphony, stream)
 
     watchForSymphonyMessages(symphony)
 }
+
+var requestDisplayName: String = ""
+var requestersEmail: String = ""
+var requestMessage: String = ""
+var requestPromotionReceived: Boolean = false
+var chatRoomName: String = ""
 
 private fun getProductionUsers() : Array<String> {
     return arrayOf("wells.powell@bnpparibas.com", "jackie.wong@uk.bnpparibas.com");
@@ -60,7 +67,31 @@ private fun getRoomStream(symphony: SymphonyClient, chatRoomName: String = "JF T
     return stream
 }
 
-private fun connectToSymphony(userEmail : String = "jason.field@uk.bnpparibas.com",  messageText : String = "Bot online. Global takeover imminent." ): SymphonyClient {
+private fun createChatRoom(symphony: SymphonyClient, chatRoomName: String, usersToAdd: ArrayList<String>){
+
+    val att = SymRoomAttributes()
+    att.discoverable = true
+    att.name = chatRoomName
+    att.membersCanInvite = true
+    att.description = chatRoomName
+    att.creatorUser = symphony.localUser
+    att.public = false
+    val room = symphony.roomService.createRoom(att)
+
+
+    for (email in usersToAdd) {
+        var userId : Long = getUserId(symphony, email)
+        symphony.roomMembershipClient.addMemberToRoom(room.streamId, userId)
+    }
+}
+
+fun getUserId(symphony: SymphonyClient, email: String): Long {
+    var user = symphony.usersClient.getUserFromEmail(email)
+    return user.id
+}
+
+
+private fun connectToSymphony(userEmail : String = "stephen.wotton@uk.bnpparibas.com",  messageText : String = "Bot online. Global takeover imminent." ): SymphonyClient {
     val symphonyClientConfig = SymphonyClientConfig(true)
 
     val symphony = SymphonyClientFactory.getClient(SymphonyClientFactory.TYPE.V4, symphonyClientConfig)
@@ -96,23 +127,98 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                 }
 
                 if (messageText.startsWith("promote request", true)) {
-                    sendRequestToProdTeam(messageText, it)
+                    sendRequestToProdTeam(symphony, messageText, it)
                 }
+
+                if (messageText.startsWith("accept request", true))
+                {
+                    prodTeamAcceptsRequest(symphony, messageText, it)
+                }
+
+                if (messageText.startsWith("release approved", true))
+                {
+                    prodTeamReleaseApproved(symphony, messageText, it)
+                }
+
+                if (messageText.startsWith("accept rejected", true))
+                {
+                    prodTeamRejectsPromotion(symphony, messageText, it)
+                }
+
+                if (messageText.startsWith("close request", true))
+                {
+                    prodTeamCloseRequest(symphony, messageText, it)
+                }
+
             }
         }
         print(".")
     }
 }
 
-fun sendRequestToProdTeam(messageText: String, it: SymEvent) {
-    val user = it.initiator.emailAddress
-    val conn = connectToSymphony()
-    val roomStream = getRoomStream(conn, getProductionChatRoom())
+fun prodTeamCloseRequest(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+
+}
+
+fun prodTeamRejectsPromotion(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+
+}
+
+fun prodTeamReleaseApproved(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+    val user = it.initiator.displayName
+    val userEmail = it.initiator.emailAddress
+    val roomStream = getRoomStream(symphony, chatRoomName)
+    val aMessage = SymMessage()
+    val userIsProductionUser = getProductionUsers().any { it.equals(userEmail)}
+
+   if (!userIsProductionUser) {
+        aMessage.messageText = "$user you are not permitted to approve requests."
+    }
+    else {
+       aMessage.messageText = "Deploying request."
+        //do jenkins magic here and message
+       JenkinsService().deploy()
+    }
+
+    symphony.messageService.sendMessage(roomStream, aMessage)
+}
+
+fun prodTeamAcceptsRequest(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+    val user = it.initiator.displayName
+    val userEmail = it.initiator.emailAddress
+    val roomStream = getRoomStream(symphony, getProductionChatRoom())
+    val aMessage = SymMessage()
+    val userIsProductionUser = getProductionUsers().any { it.equals(userEmail)}
+
+    if (!requestPromotionReceived) {
+
+        aMessage.messageText = "$user there are no requests to accept!"
+    }
+    else if (!userIsProductionUser) {
+        aMessage.messageText = "$user you are not permitted to accept requests."
+    }
+    else {
+        aMessage.messageText = "$user has accepted request $requestMessage a chatroom will be created."
+        var usersToAdd = arrayListOf<String>(userEmail, requestersEmail)
+        chatRoomName = "Request_" +  UUID.randomUUID().toString().substring(0, 8)
+        createChatRoom(symphony,chatRoomName, usersToAdd)
+    }
+
+    symphony.messageService.sendMessage(roomStream, aMessage)
+}
+
+fun sendRequestToProdTeam(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+    val user = it.initiator.displayName
+    val roomStream = getRoomStream(symphony, getProductionChatRoom())
 
     val aMessage = SymMessage()
-    aMessage.messageText = "$user: $messageText"
-    conn.messageService.sendMessage(roomStream, aMessage)
+    aMessage.messageText = "$user wishes to: $messageText"
+    symphony.messageService.sendMessage(roomStream, aMessage)
 
+    requestDisplayName =it.initiator.displayName
+    requestMessage = aMessage.messageText
+    requestersEmail = it.initiator.emailAddress
+    requestPromotionReceived = true
 }
 
 private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
