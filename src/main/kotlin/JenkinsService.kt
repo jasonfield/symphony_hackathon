@@ -53,7 +53,7 @@ class JenkinsService {
     }
 
     fun getBuildInfo(buildLink: String): String {
-        val (_, _, result) = "$jenkinsUrl$buildLink/api/json"
+        val (_, _, result) = "$jenkinsUrl/$buildLink/api/json"
                 .httpGet()
                 .authenticate("jason", "foobar")
                 .responseString()

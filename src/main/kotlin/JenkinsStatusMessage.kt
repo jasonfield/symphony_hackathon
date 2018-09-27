@@ -16,5 +16,5 @@ data class Build(
 )
 
 fun getRevision(msg: String): String {
-    return ("\"SHA1\": \"(.*)\"").toRegex().find(msg)!!.groupValues[1]
+    return ("\"SHA1\":\"([a-z0-9]*)\"").toRegex().find(msg)!!.groupValues[1]
 }

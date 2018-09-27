@@ -132,6 +132,8 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
 
                 symphony.messageService.sendMessage(stream, message("Jenkins job ${jenkinsMessage.display_name} ${jenkinsMessage.build.phase}"))
 
+                println("################ ${jenkinsMessage.build.phase} ${jenkinsMessage.build.status}")
+
                 if (jenkinsMessage.build.phase == "COMPLETED" && jenkinsMessage.build.status == "FAILURE") {
                     val me = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")
                     symphony.messageService.sendMessage(me, message("Build failed"))
@@ -139,8 +141,12 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
                     val jenkinsService = JenkinsService()
                     val buildInfo = jenkinsService.getBuildInfo(jenkinsMessage.build.url)
 
+                    println("********** $buildInfo")
+
                     val github = GitHubService()
                     val author = github.getAuthorFromChangeset(getRevision(buildInfo))
+
+                    println("********** $author")
 
                     symphony.messageService.sendMessage(me, message("Build failed for author $author"))
                 }
