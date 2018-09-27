@@ -89,6 +89,7 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
             get("/") {
                 call.respondText("Hello World!", ContentType.Text.Plain)
             }
+
             post("/jenkins") {
                 val rx = call.receiveText()
                 println("Got a message from jenkins! [$rx]")
@@ -97,12 +98,19 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
                 val mapper = jacksonObjectMapper()
                 val message = mapper.readValue<JenkinsStatusMessage>(rx)
 
-                val aMessage = SymMessage()
-                aMessage.messageText = "Jenkins job ${message.display_name} ${message.build.phase}"
+                symphony.messageService.sendMessage(stream, message("Jenkins job ${message.display_name} ${message.build.phase}"))
 
-                symphony.messageService.sendMessage(stream, aMessage)
+
+                val me = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")
+                symphony.messageService.sendMessage(me, message(rx))
             }
         }
     }
     server.start(wait = false)
+}
+
+private fun message(messageText: String): SymMessage {
+    val aMessage = SymMessage()
+    aMessage.messageText = messageText
+    return aMessage
 }
