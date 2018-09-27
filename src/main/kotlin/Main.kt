@@ -1,6 +1,5 @@
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.sun.org.apache.xpath.internal.operations.Bool
 import io.ktor.application.call
 import io.ktor.http.ContentType
 import io.ktor.request.receiveText
