@@ -76,11 +76,12 @@ private fun createChatRoom(symphony: SymphonyClient, chatRoomName: String, users
     att.public = false
     val room = symphony.roomService.createRoom(att)
 
-
     for (email in usersToAdd) {
         var userId : Long = getUserId(symphony, email)
         symphony.roomMembershipClient.addMemberToRoom(room.streamId, userId)
     }
+
+
 }
 
 fun getUserId(symphony: SymphonyClient, email: String): Long {
@@ -145,19 +146,10 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     changeRequestRoomMessage(symphony, m, it)
                 }
 
-                if (messageText.startsWith("close request", true))
-                {
-                    prodTeamCloseRequest(symphony, messageText, it)
-                }
-
             }
         }
         print(".")
     }
-}
-
-fun prodTeamCloseRequest(symphony: SymphonyClient, messageText: String, it: SymEvent) {
-
 }
 
 fun changeRequestRoomMessage(symphony: SymphonyClient, messageText: String, it: SymEvent) {
@@ -201,6 +193,7 @@ fun prodTeamAcceptsRequest(symphony: SymphonyClient, messageText: String, it: Sy
     }
 
     symphony.messageService.sendMessage(roomStream, aMessage)
+    changeRequestRoomMessage(symphony, requestMessage, it)
 }
 
 fun sendRequestToProdTeam(symphony: SymphonyClient, messageText: String, it: SymEvent) {
