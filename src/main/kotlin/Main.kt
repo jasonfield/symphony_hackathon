@@ -217,8 +217,8 @@ fun sendRequestToProdTeam(symphony: SymphonyClient, messageText: String, it: Sym
     val user = it.initiator.displayName
     val roomStream = getRoomStream(symphony, getProductionChatRoom())
 
-    val content = "$user wishes to: $messageText <a href='https://something.com'>serviceNow</a>"
-    symphony.messageService.sendMessage(roomStream, message(content))
+    val content = "$user wishes to: $messageText"
+    symphony.messageService.sendMessage(roomStream, message("$content <a href='https://something.com'>serviceNow</a>"))
 
     requestDisplayName = it.initiator.displayName
     requestMessage = content
