@@ -32,6 +32,22 @@ fun main(args: Array<String>) {
     watchForSymphonyMessages(symphony)
 }
 
+private fun getProductionUsers() : Array<String> {
+    return arrayOf("wells.powell@bnpparibas.com", "jackie.wong@uk.bnpparibas.com");
+}
+
+private fun getDevelopmentUsers() : Array<String> {
+    return arrayOf("jason.field@uk.bnpparibas.com", "stephen.wotton@uk.bnpparibas.com");
+}
+
+private fun getDevelopersChatRoom() : String {
+    return "Dev Chat"
+}
+
+private fun getProductionChatRoom() : String {
+    return "Prod Chat"
+}
+
 private fun getRoomStream(symphony: SymphonyClient, chatRoomName: String = "JF Testing"): SymStream {
     val criteria = SymRoomSearchCriteria()
     criteria.member = symphony.localUser
@@ -89,6 +105,13 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
 }
 
 fun sendRequestToProdTeam(messageText: String, it: SymEvent) {
+    val user = it.initiator.emailAddress
+    val conn = connectToSymphony()
+    val roomStream = getRoomStream(conn, getProductionChatRoom())
+
+    val aMessage = SymMessage()
+    aMessage.messageText = "$user: $messageText"
+    conn.messageService.sendMessage(roomStream, aMessage)
 
 }
 
