@@ -54,7 +54,7 @@ private fun getProductionChatRoom() : String {
     return "Prod Chat"
 }
 
-private fun getRoomStream(symphony: SymphonyClient, chatRoomName: String = "JF Testing"): SymStream {
+private fun getRoomStream(symphony: SymphonyClient, chatRoomName: String = "Dev Chat"): SymStream {
     val criteria = SymRoomSearchCriteria()
     criteria.member = symphony.localUser
     criteria.query = chatRoomName
