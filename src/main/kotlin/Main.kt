@@ -1,5 +1,6 @@
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.sun.org.apache.xpath.internal.operations.Bool
 import io.ktor.application.call
 import io.ktor.http.ContentType
 import io.ktor.request.receiveText
@@ -136,7 +137,11 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                 {
                     val a = it.initiator.displayName
                     val m = "Deploying request, approved by $a"
-                    changeRequestRoomMessage(symphony, m, it)
+                    changeRequestRoomMessage(symphony, m, it, true)
+                    var u = it.initiator.displayName
+                    var x = "$u APPROVED request: [$requestMessage]"
+                    sendMessage(symphony, x, getProductionChatRoom(), it)
+                    sendMessage(symphony, x, getDevelopersChatRoom(), it)
                 }
 
                 if (messageText.startsWith("accept rejected", true))
@@ -144,6 +149,10 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     val a = it.initiator.displayName
                     val m = "Request rejected by $a"
                     changeRequestRoomMessage(symphony, m, it)
+                    var u = it.initiator.displayName
+                    var x = "$u REJECTED request: [$requestMessage]"
+                    sendMessage(symphony, x, getProductionChatRoom(), it)
+                    sendMessage(symphony, x, getDevelopersChatRoom(), it)
                 }
 
             }
@@ -152,7 +161,7 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
     }
 }
 
-fun changeRequestRoomMessage(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+fun changeRequestRoomMessage(symphony: SymphonyClient, messageText: String, it: SymEvent, doJenkins: Boolean = false) {
     val user = it.initiator.displayName
     val userEmail = it.initiator.emailAddress
     val roomStream = getRoomStream(symphony, chatRoomName)
@@ -165,7 +174,9 @@ fun changeRequestRoomMessage(symphony: SymphonyClient, messageText: String, it: 
     else {
        aMessage.messageText = messageText
         //do jenkins magic here and message
-       JenkinsService().deploy()
+       if (doJenkins) {
+           JenkinsService().deploy()
+       }
     }
 
     symphony.messageService.sendMessage(roomStream, aMessage)
@@ -186,15 +197,27 @@ fun prodTeamAcceptsRequest(symphony: SymphonyClient, messageText: String, it: Sy
         aMessage.messageText = "$user you are not permitted to accept requests."
     }
     else {
-        aMessage.messageText = "$user has accepted request $requestMessage a chatroom will be created."
+
         var usersToAdd = arrayListOf<String>(userEmail, requestersEmail)
         chatRoomName = "Request_" +  UUID.randomUUID().toString().substring(0, 8)
         createChatRoom(symphony,chatRoomName, usersToAdd)
+        aMessage.messageText = "$user has accepted request $requestMessage a chatroom $chatRoomName has been created."
     }
 
     symphony.messageService.sendMessage(roomStream, aMessage)
     changeRequestRoomMessage(symphony, requestMessage, it)
 }
+
+
+fun sendMessage(symphony: SymphonyClient, messageText: String, roomName: String, it: SymEvent) {
+    val user = it.initiator.displayName
+    val roomStream = getRoomStream(symphony, roomName)
+
+    val aMessage = SymMessage()
+    aMessage.messageText = messageText
+    symphony.messageService.sendMessage(roomStream, aMessage)
+}
+
 
 fun sendRequestToProdTeam(symphony: SymphonyClient, messageText: String, it: SymEvent) {
     val user = it.initiator.displayName
