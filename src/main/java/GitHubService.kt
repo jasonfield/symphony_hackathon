@@ -11,8 +11,10 @@ data class GitDetails(
         val password: String
 )
 
+data class CommitDetails(val author: String, val link: String)
+
 class GitHubService {
-    fun getAuthorFromChangeset(commitHash: String): String {
+    fun getDetailsFromChangeset(commitHash: String): CommitDetails {
         val mapper = jacksonObjectMapper()
         val gitDetails = mapper.readValue<GitDetails>(File("git.json").readText())
 
@@ -25,7 +27,7 @@ class GitHubService {
         val commitService = CommitService()
         val commit = commitService.getCommit(repository, commitHash)
 
-        return commit.author.login
+        return CommitDetails(commit.author.login, commit.url)
     }
 
 }

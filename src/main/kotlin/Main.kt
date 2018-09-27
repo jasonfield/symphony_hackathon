@@ -142,10 +142,10 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
                     val buildInfo = jenkinsService.getBuildInfo(jenkinsMessage.build.url)
 
                     val github = GitHubService()
-                    val author = github.getAuthorFromChangeset(getRevision(buildInfo))
+                    val details = github.getDetailsFromChangeset(getRevision(buildInfo))
 
-                    val target = symphony.usersClient.getUserFromEmail(authorMap.get(author))
-                    symphony.messageService.sendMessage(target, message("Hi it looks like your commit broke the build - <a href='${jenkinsMessage.build.full_url}'>build</a>"))
+                    val target = symphony.usersClient.getUserFromEmail(authorMap.get(details.author))
+                    symphony.messageService.sendMessage(target, message("Hi it looks like your commit broke the build - <a href='${jenkinsMessage.build.full_url}'>jenkins</a> | <a href='${details.link}'>github</a>"))
                 }
 
                 val me = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")
