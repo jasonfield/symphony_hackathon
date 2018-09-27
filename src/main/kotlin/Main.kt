@@ -133,12 +133,16 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
 
                 if (messageText.startsWith("release approved", true))
                 {
-                    prodTeamReleaseApproved(symphony, messageText, it)
+                    val a = it.initiator.displayName
+                    val m = "Deploying request, approved by $a"
+                    changeRequestRoomMessage(symphony, m, it)
                 }
 
                 if (messageText.startsWith("accept rejected", true))
                 {
-                    prodTeamRejectsPromotion(symphony, messageText, it)
+                    val a = it.initiator.displayName
+                    val m = "Request rejected by $a"
+                    changeRequestRoomMessage(symphony, m, it)
                 }
 
                 if (messageText.startsWith("close request", true))
@@ -156,11 +160,7 @@ fun prodTeamCloseRequest(symphony: SymphonyClient, messageText: String, it: SymE
 
 }
 
-fun prodTeamRejectsPromotion(symphony: SymphonyClient, messageText: String, it: SymEvent) {
-
-}
-
-fun prodTeamReleaseApproved(symphony: SymphonyClient, messageText: String, it: SymEvent) {
+fun changeRequestRoomMessage(symphony: SymphonyClient, messageText: String, it: SymEvent) {
     val user = it.initiator.displayName
     val userEmail = it.initiator.emailAddress
     val roomStream = getRoomStream(symphony, chatRoomName)
@@ -171,7 +171,7 @@ fun prodTeamReleaseApproved(symphony: SymphonyClient, messageText: String, it: S
         aMessage.messageText = "$user you are not permitted to approve requests."
     }
     else {
-       aMessage.messageText = "Deploying request."
+       aMessage.messageText = messageText
         //do jenkins magic here and message
        JenkinsService().deploy()
     }
