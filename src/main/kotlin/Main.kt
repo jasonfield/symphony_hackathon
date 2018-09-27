@@ -133,7 +133,7 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
                 symphony.messageService.sendMessage(stream, message("Jenkins job ${jenkinsMessage.display_name} ${jenkinsMessage.build.phase}"))
 
                 if (jenkinsMessage.build.phase == "COMPLETED" && jenkinsMessage.build.status == "FAILURE") {
-
+                    val github = GitHubService()
                 }
 
 
