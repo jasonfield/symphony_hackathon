@@ -10,6 +10,11 @@ data class JenkinsStatusMessage(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Build(
         val full_url: String,
+        val url: String,
         val phase: String,
         val status: String?
 )
+
+fun getRevision(msg: String): String {
+    return ("\"SHA1\":\"([a-z0-9]*)\"").toRegex().find(msg)!!.groupValues[1]
+}

@@ -7,6 +7,7 @@ USER root
 RUN mkdir /app
 COPY build/libs/rocket-1.0-SNAPSHOT.jar /app
 COPY application.properties /app
+COPY git.json /app
 COPY certs /app/certs
 
 WORKDIR /app

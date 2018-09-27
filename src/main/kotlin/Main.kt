@@ -24,9 +24,7 @@ fun main(args: Array<String>) {
     val symphony = connectToSymphony()
 
     val stream = getRoomStream(symphony)
-    val aMessage = SymMessage()
-    aMessage.messageText = "Bonjour"
-    symphony.messageService.sendMessage(stream, aMessage)
+    symphony.messageService.sendMessage(stream, message("oh hai room"))
 
     startWebServer(symphony, stream)
 
@@ -40,11 +38,11 @@ var requestPromotionReceived: Boolean = false
 var chatRoomName: String = ""
 
 private fun getProductionUsers() : Array<String> {
-    return arrayOf("wells.powell@bnpparibas.com", "jackie.wong@uk.bnpparibas.com");
+    return arrayOf("wells.powell@bnpparibas.com", "jackie.wong@uk.bnpparibas.com")
 }
 
 private fun getDevelopmentUsers() : Array<String> {
-    return arrayOf("jason.field@uk.bnpparibas.com", "stephen.wotton@uk.bnpparibas.com");
+    return arrayOf("jason.field@uk.bnpparibas.com", "stephen.wotton@uk.bnpparibas.com")
 }
 
 private fun getDevelopersChatRoom() : String {
@@ -99,9 +97,7 @@ private fun connectToSymphony(userEmail : String = "stephen.wotton@uk.bnpparibas
     val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail(userEmail))
 
     if (messageText.isNotEmpty()) {
-        val aMessage = SymMessage()
-        aMessage.messageText = messageText
-        symphony.messageService.sendMessage(stream, aMessage)
+        symphony.messageService.sendMessage(stream, message(messageText))
     }
 
     return symphony
@@ -222,6 +218,12 @@ fun sendRequestToProdTeam(symphony: SymphonyClient, messageText: String, it: Sym
 }
 
 private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
+
+    val authorMap = mapOf(
+            "jasonfield" to "jason.field@uk.bnpparibas.com",
+            "WottonParibasTest" to "stephen.wotton@uk.bnpparibas.com"
+    )
+
     val server = embeddedServer(Netty, port = 6677) {
         routing {
             get("/") {
@@ -239,9 +241,18 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
                 symphony.messageService.sendMessage(stream, message("Jenkins job ${jenkinsMessage.display_name} ${jenkinsMessage.build.phase}"))
 
                 if (jenkinsMessage.build.phase == "COMPLETED" && jenkinsMessage.build.status == "FAILURE") {
-                    val github = GitHubService()
-                }
+                    val me = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")
+                    symphony.messageService.sendMessage(me, message("Build failed"))
 
+                    val jenkinsService = JenkinsService()
+                    val buildInfo = jenkinsService.getBuildInfo(jenkinsMessage.build.url)
+
+                    val github = GitHubService()
+                    val details = github.getDetailsFromChangeset(getRevision(buildInfo))
+
+                    val target = symphony.usersClient.getUserFromEmail(authorMap.get(details.author))
+                    symphony.messageService.sendMessage(target, message("Hi it looks like your commit broke the build - <a href='${jenkinsMessage.build.full_url}'>jenkins</a> | <a href='${details.link}'>github</a>"))
+                }
 
                 val me = symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com")
                 symphony.messageService.sendMessage(me, message(rx))
@@ -252,7 +263,7 @@ private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
 }
 
 private fun message(messageText: String): SymMessage {
-    val aMessage = SymMessage()
-    aMessage.messageText = messageText
-    return aMessage
+    val symMsg = SymMessage()
+    symMsg.message = "<messageML>$messageText</messageML>"
+    return symMsg
 }
