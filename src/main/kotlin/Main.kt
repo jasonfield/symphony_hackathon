@@ -32,10 +32,10 @@ fun main(args: Array<String>) {
     watchForSymphonyMessages(symphony)
 }
 
-private fun getRoomStream(symphony: SymphonyClient): SymStream {
+private fun getRoomStream(symphony: SymphonyClient, chatRoomName: String = "JF Testing"): SymStream {
     val criteria = SymRoomSearchCriteria()
     criteria.member = symphony.localUser
-    criteria.query = "JF Testing"
+    criteria.query = chatRoomName
     val roomSearch = symphony.streamsClient.roomSearch(criteria, null, null)
 
     val rd: SymRoomDetail = roomSearch.rooms[0]
@@ -44,17 +44,18 @@ private fun getRoomStream(symphony: SymphonyClient): SymStream {
     return stream
 }
 
-private fun connectToSymphony(): SymphonyClient {
+private fun connectToSymphony(userEmail : String = "jason.field@uk.bnpparibas.com",  messageText : String = "Bot online. Global takeover imminent." ): SymphonyClient {
     val symphonyClientConfig = SymphonyClientConfig(true)
 
     val symphony = SymphonyClientFactory.getClient(SymphonyClientFactory.TYPE.V4, symphonyClientConfig)
 
-    val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail("jason.field@uk.bnpparibas.com"))
+    val stream = symphony.streamsClient.getStream(symphony.usersClient.getUserFromEmail(userEmail))
 
-    val aMessage = SymMessage()
-    aMessage.messageText = "Bot online. Global takeover imminent."
-
-    symphony.messageService.sendMessage(stream, aMessage)
+    if (messageText.isNotEmpty()) {
+        val aMessage = SymMessage()
+        aMessage.messageText = messageText
+        symphony.messageService.sendMessage(stream, aMessage)
+    }
 
     return symphony
 }
@@ -77,10 +78,18 @@ private fun watchForSymphonyMessages(symphony: SymphonyClient) {
                     val jenkinsService = JenkinsService()
                     jenkinsService.deploy()
                 }
+
+                if (messageText.startsWith("promote request", true)) {
+                    sendRequestToProdTeam(messageText, it)
+                }
             }
         }
         print(".")
     }
+}
+
+fun sendRequestToProdTeam(messageText: String, it: SymEvent) {
+
 }
 
 private fun startWebServer(symphony: SymphonyClient, stream: SymStream) {
