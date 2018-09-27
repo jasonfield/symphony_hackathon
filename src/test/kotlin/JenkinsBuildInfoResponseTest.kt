@@ -26,7 +26,7 @@ class JenkinsBuildInfoResponseTest {
           "buildNumber": 5,
           "buildResult": null,
           "marked": {
-            "SHA1": "7db4d51be652f3e90e91612d5f06c4e6352295b6",
+            "SHA1":"7db4d51be652f3e90e91612d5f06c4e6352295b6",
             "branch": [
               {
                 "SHA1": "7db4d51be652f3e90e91612d5f06c4e6352295b6",
